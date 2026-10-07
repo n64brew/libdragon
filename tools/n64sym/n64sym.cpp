@@ -324,16 +324,45 @@ private:
     }
 };
 
-void elf_read_function_symbols(const char *elf, std::unordered_set<uint32_t> &all_functions)
+// Start objdump with the given option on the ELF file. It is run directly with
+// an argument vector rather than through the shell (as addr2line is), so that
+// paths containing spaces or other shell metacharacters, either in $N64_INST
+// or in the ELF filename, are passed through unchanged.
+static void objdump_start(subprocess_s *subp, const char *opt, const char *elf)
 {
-    char *cmd = NULL;
-    asprintf(&cmd, "%sobjdump -t %s", gccprefix_triplet, elf);
-    verbose(1, "Running: %s\n", cmd);
-    FILE *f = popen(cmd, "r");
-    if (!f) {
-        fprintf(stderr, "Error: cannot run: %s\n", cmd);
+    char *bin = NULL;
+    asprintf(&bin, "%sobjdump", gccprefix_triplet);
+    const char *cmd[] = { bin, opt, elf, NULL };
+    verbose(1, "Running: %s %s %s\n", bin, opt, elf);
+    if (subprocess_create(cmd, subprocess_option_no_window | subprocess_option_inherit_environment, subp) != 0) {
+        fprintf(stderr, "Error: cannot run: %s\n", bin);
         exit(1);
     }
+    free(bin);
+}
+
+// Wait for an objdump started by objdump_start() to exit, after its output has
+// been read. Its error output (at most a few lines of warnings) is forwarded
+// to our stderr. Returns true if objdump succeeded.
+static bool objdump_finish(subprocess_s *subp)
+{
+    char buf[256]; size_t n;
+    FILE *err = subprocess_stderr(subp);
+    while ((n = fread(buf, 1, sizeof(buf), err)) > 0)
+        fwrite(buf, 1, n, stderr);
+
+    int status = -1;
+    if (subprocess_join(subp, &status) != 0)
+        status = -1;
+    subprocess_destroy(subp);
+    return status == 0;
+}
+
+void elf_read_function_symbols(const char *elf, std::unordered_set<uint32_t> &all_functions)
+{
+    subprocess_s subp;
+    objdump_start(&subp, "-t", elf);
+    FILE *f = subprocess_stdout(&subp);
 
     char *line = NULL; size_t line_size = 0;
     while (getline(&line, &line_size, f) != -1) {
@@ -347,8 +376,7 @@ void elf_read_function_symbols(const char *elf, std::unordered_set<uint32_t> &al
         }
     }
     free(line);
-    free(cmd);
-    pclose(f);
+    objdump_finish(&subp);
 }
 
 static bool disasm_get_fields(const char *line, char **mnemonic_out, char **operands_out)
@@ -437,22 +465,16 @@ bool elf_find_callsites(const char *elf)
     elf_read_function_symbols(elf, all_functions);
     verbose(1, "Found %zu function symbols\n", all_functions.size());
 
-    // Start the symbolizer. This must happen before the popen() below, or the
-    // addr2line processes would inherit the objdump pipe write-end, and we would
+    // Start the symbolizer. This must happen before objdump is started below, or
+    // the addr2line processes would inherit the objdump pipe write-end, and we would
     // then never see EOF while reading the disassembly. Batches still pending are
     // drained (and their symbols emitted) when a2l goes out of scope.
     a2l_s a2l(elf);
 
     // Start objdump to parse the disassembly of the ELF file
-    char *cmd = NULL;
-    asprintf(&cmd, "%sobjdump -d %s", gccprefix_triplet, elf);
-    verbose(1, "Running: %s\n", cmd);
-    FILE *disasm = popen(cmd, "r");
-    if (!disasm) {
-        fprintf(stderr, "Error: cannot run: %s\n", cmd);
-        exit(1);
-    }
-    free(cmd);
+    subprocess_s subp;
+    objdump_start(&subp, "-d", elf);
+    FILE *disasm = subprocess_stdout(&subp);
 
     char *line = NULL; size_t line_size = 0;
     while (getline(&line, &line_size, disasm) != -1) {
@@ -487,13 +509,7 @@ bool elf_find_callsites(const char *elf)
         free(ops);
     }
     free(line);
-    int status = pclose(disasm);
-
-#ifdef __MINGW32__
-    return status == 0;
-#else
-    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
-#endif
+    return objdump_finish(&subp);
 }
 
 void compress_strings(const std::vector<char*> &strings, huff_code_t *huff_table,
