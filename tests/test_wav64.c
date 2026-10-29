@@ -1145,6 +1145,49 @@ static bool test_mixer_stream_pcm8(float freq, int startsample)
     return true;
 }
 
+// Lowering the limit of a stopped channel, which is what xm64player_close does
+// on each of its channels (mixer_ch_stop, then mixer_ch_set_limits back to the
+// defaults). mixer_ch_stop keeps the last frequency of the channel, and each mix
+// round syncs the frequency of every channel below the highest one ever used,
+// playing or not: a stopped note faster than the new limit used to trip the
+// limit assertion of mixer_ch_apply_freq on the next poll.
+static bool test_mixer_stop_lower_limit(void)
+{
+    float rate = audio_get_frequency();
+    mixer_ch_stop(SP_CHANNEL);
+    sv_mix(2048);
+
+    mixer_ch_set_limits(SP_CHANNEL, 8, rate * 2, 0);
+    mixer_ch_play(SP_CHANNEL, &sp_wave);
+    mixer_ch_set_freq(SP_CHANNEL, rate * 1.5f);
+    sv_mix(2048);
+
+    mixer_ch_stop(SP_CHANNEL);
+    mixer_ch_set_limits(SP_CHANNEL, 0, 0, 0);
+    // Used to assert here, though nothing is playing above the limit.
+    sv_mix(2048);
+
+    // The channel is usable again within its new limit.
+    mixer_ch_play(SP_CHANNEL, &sp_wave);
+    mixer_ch_set_freq(SP_CHANNEL, rate);
+    mixer_ch_set_vol(SP_CHANNEL, 0.5f, 0.5f);
+    sv_mix(2048);
+    sv_mix(4096);
+    int peak = 0;
+    for (int j = 0; j < 4096 * 2; j++) {
+        int a = sv_out[j] < 0 ? -sv_out[j] : sv_out[j];
+        if (a > peak) peak = a;
+    }
+    mixer_ch_stop(SP_CHANNEL);
+    sv_mix(2048);
+
+    if (peak < 256) {
+        printf("FAILED mixer stop lower limit: silent after replay (peak %d)\n", peak);
+        return false;
+    }
+    return true;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Block codec at a loop point
 //
@@ -3663,6 +3706,11 @@ int main(void)
     total++; if (!test_mixer_vadpcm_set_loop_overshoot()) failed++;
     total++; if (!test_mixer_vadpcm_large_loop_seek(&ll_wave_8x, 44100.f * 16)) failed++;
     total++; if (!test_mixer_vadpcm_large_loop_seek(&ll_wave, 16000)) failed++;
+
+    // Last: a regression fails on an assertion, which stops the ROM.
+    printf("Stopped channel, lower limit\n");
+    fflush(stdout);
+    total++; if (!test_mixer_stop_lower_limit()) failed++;
 
     sv_silence();
     mixer_ch_set_limits(SV_CHANNEL, 0, 48000, 0);
