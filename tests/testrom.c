@@ -202,6 +202,7 @@ int assert_equal_mem(TestContext *ctx, const char *file, int line, const uint8_t
 
 #include "test_kernel.c"
 #include "test_dfs.c"
+#include "test_eeprom.c"
 #include "test_eepromfs.c"
 #include "test_cache.c"
 #include "test_sys.c"
@@ -283,6 +284,8 @@ static const struct Testsuite
 	TEST_FUNC(test_dfs_rom_size,              25, TEST_FLAGS_IO),
 	TEST_FUNC(test_dfs_ioctl,                  0, TEST_FLAGS_NO_BENCHMARK),
 	TEST_FUNC(test_dfs_directory,              0, TEST_FLAGS_NO_BENCHMARK),
+	TEST_FUNC(test_eeprom_read_bytes,          0, TEST_FLAGS_NO_BENCHMARK),
+	TEST_FUNC(test_eeprom_write_bytes,         0, TEST_FLAGS_NO_BENCHMARK),
 	TEST_FUNC(test_eepromfs,                   0, TEST_FLAGS_IO),
 	TEST_FUNC(test_cache_invalidate,        1763, TEST_FLAGS_NONE),
 	TEST_FUNC(test_debug_sdfs,                 0, TEST_FLAGS_NO_BENCHMARK),
