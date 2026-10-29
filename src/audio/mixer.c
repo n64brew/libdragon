@@ -608,6 +608,10 @@ static void mixer_ch_sync_freq(int ch, int64_t tick)
 	mixer_channel_t *c = &Mixer.channels[ch];
 	if (c->flags & CH_FLAGS_STEREO_SUB)
 		return;
+	// A stopped channel keeps its last frequency, which may exceed limits set
+	// since; its step is not used until it plays again, and play sets it.
+	if (!c->ptr)
+		return;
 	float f = mixer_ramp_at(&Mixer.freq_ramp[ch], Mixer.freq[ch], tick);
 	mixer_ramp_active(&Mixer.freq_ramp[ch], tick);
 	mixer_ch_apply_freq(ch, f);
