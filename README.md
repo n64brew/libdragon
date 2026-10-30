@@ -59,7 +59,7 @@ Seeking • <a href="https://github.com/n64brew/libdragon/wiki/MPEG1-Player">Ren
 
 <h3>🎮&nbsp; Input &amp; Peripherals</h3>
 
-<a href="https://libdragon.dev/ref/group__joypad.html">Joypads</a> • <a href="https://libdragon.dev/ref/group__joypad.html">GameCube controllers</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Mouse</a> • <a href="https://libdragon.dev/ref/group__controllerpak.html">Controller Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Rumble Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Transfer Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Bio Sensor</a> • <a href="https://libdragon.dev/ref/group__rtc.html">RTC</a>
+<a href="https://libdragon.dev/ref/group__joypad.html">Joypads</a> • <a href="https://libdragon.dev/ref/group__joypad.html">GameCube controllers</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Mouse</a> • <a href="https://libdragon.dev/ref/group__controllerpak.html">Controller Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Rumble Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Transfer Pak</a> • <a href="https://libdragon.dev/ref/group__joypad.html">Bio Sensor</a> • <a href="https://libdragon.dev/ref/group__rtc.html">RTC</a> • <a href="https://libdragon.dev/ref/group__gba_link.html">GBA Link Cable</a>
 
 </td>
 <td width="33%" valign="top">

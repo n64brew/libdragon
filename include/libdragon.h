@@ -40,6 +40,8 @@
 #include "controller.h"
 #include "rtc.h"
 #include "bio_sensor.h"
+#include "gba_link.h"
+#include "gba_link_multiboot.h"
 #include "mempak.h"
 #include "cpak.h"
 #include "cpakfs.h"

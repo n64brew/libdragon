@@ -8,6 +8,8 @@ LIBDRAGON_OBJS += \
 	$(BUILD_DIR)/joybus/cpakfs_fsck.o \
 	$(BUILD_DIR)/joybus/eeprom.o \
 	$(BUILD_DIR)/joybus/eepromfs.o \
+	$(BUILD_DIR)/joybus/gba_link.o \
+	$(BUILD_DIR)/joybus/gba_link_multiboot.o \
 	$(BUILD_DIR)/joybus/joybus_accessory.o \
 	$(BUILD_DIR)/joybus/joybus_rtc.o \
 	$(BUILD_DIR)/joybus/joybus.o \

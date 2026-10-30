@@ -172,11 +172,25 @@ typedef joybus_cmd_n64_accessory_read_port_t joybus_cmd_64gb_link_cable_read_por
 /**
  * @brief "GBA Link Cable Read" Joybus command structure.
  * 
- * Identical to the "N64 Accessory Read" command but with a different command ID.
- * 
  * @see #JOYBUS_COMMAND_ID_GBA_LINK_CABLE_READ
  */
-typedef joybus_cmd_n64_accessory_read_port_t joybus_cmd_gba_link_cable_read_port_t;
+typedef struct __attribute__((packed)) joybus_cmd_gba_link_cable_read_port_s
+{
+    /** @brief "GBA Link Cable Read" command send data */
+    struct __attribute__((packed))
+    {
+        /** @brief Joybus command ID (#JOYBUS_COMMAND_ID_GBA_LINK_CABLE_READ) */
+        uint8_t command;
+    } send;
+    /** @brief "GBA Link Cable Read" command receive data */
+    struct __attribute__((packed))
+    {
+        /** @brief 4-byte payload of data read from the GBA. */
+        uint8_t data[JOYBUS_GBA_LINK_CABLE_DATA_SIZE];
+        /** @brief GBA status (lower 8 bits of JOYSTAT register). */
+        uint8_t status;
+    } recv;
+} joybus_cmd_gba_link_cable_read_port_t;
 
 /**
  * @brief "N64 Accessory Write" Joybus command structure.
@@ -216,11 +230,25 @@ typedef joybus_cmd_n64_accessory_write_port_t joybus_cmd_64gb_link_cable_write_p
 /**
  * @brief "GBA Link Cable Write" Joybus command structure.
  * 
- * Identical to the "N64 Accessory Write" command but with a different command ID.
- * 
  * @see #JOYBUS_COMMAND_ID_GBA_LINK_CABLE_WRITE
  */
-typedef joybus_cmd_n64_accessory_write_port_t joybus_cmd_gba_link_cable_write_port_t;
+typedef struct __attribute__((packed)) joybus_cmd_gba_link_cable_write_port_s
+{
+    /** @brief "GBA Link Cable Write" command send data */
+    struct __attribute__((packed))
+    {
+        /** @brief Joybus command ID (#JOYBUS_COMMAND_ID_GBA_LINK_CABLE_WRITE) */
+        uint8_t command;
+        /** @brief 4-byte payload of data to write to the GBA. */
+        uint8_t data[JOYBUS_GBA_LINK_CABLE_DATA_SIZE];
+    } send;
+    /** @brief "GBA Link Cable Write" command receive data */
+    struct __attribute__((packed))
+    {
+        /** @brief GBA status (lower 8 bits of JOYSTAT register). */
+        uint8_t status;
+    } recv;
+} joybus_cmd_gba_link_cable_write_port_t;
 
 /**
  * @brief "Identify" Joybus command structure.

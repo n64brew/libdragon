@@ -11,6 +11,7 @@ EXAMPLES += customfont
 EXAMPLES += eepromfstest
 EXAMPLES += fontdemo
 EXAMPLES += fontgallery
+EXAMPLES += gbalink
 EXAMPLES += gldemo
 EXAMPLES += helloworld
 EXAMPLES += joypadtest

@@ -76,6 +76,10 @@ extern "C" {
  * @brief Size of a Joybus N64 accessory read/write payload in bytes. 
  */
 #define JOYBUS_ACCESSORY_DATA_SIZE  32
+/** 
+ * @brief Size of a Joybus GBA Link Cable read/write payload in bytes. 
+ */
+#define JOYBUS_GBA_LINK_CABLE_DATA_SIZE  4
 /** @} */ /* JOYBUS_PAYLOAD_SIZES */
 
 /**
@@ -245,6 +249,26 @@ typedef uint16_t joybus_identifier_t;
  * @brief Joybus identify status bit for EEPROM devices that indicates a write is in-progress.
  */
 #define JOYBUS_IDENTIFY_STATUS_EEPROM_BUSY                0x80
+/**
+ * @brief Joybus identify status byte mask for GBA Link Cable status.
+ */
+#define JOYBUS_IDENTIFY_STATUS_GBA_MASK                   0x3A
+/**
+ * @brief Joybus identify status byte mask for GBA Link Cable GPIO flag 1.
+ */
+#define JOYBUS_IDENTIFY_STATUS_GBA_GPIO1                  0x20
+/**
+ * @brief Joybus identify status byte mask for GBA Link Cable GPIO flag 0.
+ */
+#define JOYBUS_IDENTIFY_STATUS_GBA_GPIO0                  0x10
+/**
+ * @brief Joybus identify status byte mask for GBA Link Cable sending flag.
+ */
+#define JOYBUS_IDENTIFY_STATUS_GBA_SENDING                0x08
+/**
+ * @brief Joybus identify status byte mask for GBA Link Cable receiving flag.
+ */
+#define JOYBUS_IDENTIFY_STATUS_GBA_RECEIVING              0x02
 /** @} */
 
 /** @brief Joybus detection events enumeration */
