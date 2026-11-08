@@ -111,6 +111,7 @@ void usage_compress(void)
 	printf("\n");
 	printf("     vadpcm,huffman=true    Enable Huffman compression in VADPCM.\n");
 	printf("                            (default: true for wav64, false for xm64))\n");
+	printf("     vadpcm,beam=true       Enable beam-search refinement (default: false)\n");
 	printf("     vadpcm,bits=<2|3|4>    Specify how many bits per sample use in VADPCM coding (default: 4)\n");
 	printf("                            For values less than 4, huffman compression should be enabled.\n");
 	printf("     ulc,mode=<vbr|abr|cbr> Select ULC rate-control mode (default: vbr)\n");
@@ -329,6 +330,20 @@ int main(int argc, char *argv[]) {
 							flag_wav_compress_vadpcm_huffman = false;
 						else {
 							fprintf(stderr, "invalid value for compression option 'huffman': %s\n", value);
+							return 1;
+						}
+					} else if (!strcmp(key, "beam")) {
+						if (*flag_compress != 1) {
+							fprintf(stderr, "compression option 'beam' only allowed for VADPCM (%s 1)\n", argv[i-1]);
+							return 1;
+						}
+
+						if (!strcmp(value, "true") || !strcmp(value, "1"))
+							flag_wav_compress_vadpcm_beam = true;
+						else if (!strcmp(value, "false") || !strcmp(value, "0"))
+							flag_wav_compress_vadpcm_beam = false;
+						else {
+							fprintf(stderr, "invalid value for compression option 'beam': %s\n", value);
 							return 1;
 						}
 					} else if (!strcmp(key, "bits")) {

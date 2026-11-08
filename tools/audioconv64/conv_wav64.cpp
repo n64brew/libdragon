@@ -45,6 +45,7 @@ int flag_wav_looping_offset = 0;
 int flag_wav_compress = 1;
 int flag_wav_compress_vadpcm_huffman = -1;
 int flag_wav_compress_vadpcm_bits = 4;
+bool flag_wav_compress_vadpcm_beam = false;
 ulc_mode_t flag_wav_compress_ulc_mode = ULC_MODE_VBR;
 float flag_wav_compress_ulc_bitrate = 64.0f;
 float flag_wav_compress_ulc_quality = 50.0f;
@@ -449,6 +450,16 @@ bool wav64_write(const char *infn, const char *outfn, FILE *out, wav_data_t* wav
 				failed = true;
 				free(destchan);
 				break;
+			}
+			if (flag_wav_compress_vadpcm_beam) {
+				err = vadpcm_beam_refine(&parms, codebook + kPREDICTORS * kVADPCMEncodeOrder * i, nframes, destchan, schan, kVADPCMBeamDefaultShape);
+
+				if (err != kVADPCMErrNone) {
+					fprintf(stderr, "ERROR: %s: VADPCM beam refinement failed: %s\n", infn, vadpcm_error_name(err));
+					failed = true;
+					free(destchan);
+					break;
+				}
 			}
 			if (!skip_points.empty()) {
 				// Compute decoder states at all skip points in a single forward pass.

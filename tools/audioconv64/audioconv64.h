@@ -68,6 +68,7 @@ extern bool flag_wav_looping;
 extern int flag_wav_looping_offset;
 extern int flag_wav_compress;
 extern int flag_wav_compress_vadpcm_huffman;
+extern bool flag_wav_compress_vadpcm_beam;
 extern int flag_wav_compress_vadpcm_bits;
 extern ulc_mode_t flag_wav_compress_ulc_mode;
 extern float flag_wav_compress_ulc_bitrate;

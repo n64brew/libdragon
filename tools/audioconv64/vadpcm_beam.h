@@ -2,6 +2,15 @@
 
 #include "vadpcm/codec/vadpcm.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum {
+    // Default weight for changes in reconstruction error.
+    kVADPCMBeamDefaultShape = 4,
+};
+
 // Refine an existing VADPCM stream in place using beam search. Reuses the
 // codebook and compares predictors, scales, and residual sequences for each
 // frame. The predictor order is kVADPCMEncodeOrder (2).
@@ -36,3 +45,7 @@ vadpcm_error vadpcm_beam_refine(const struct vadpcm_params *params,
                                 void *dest,
                                 const int16_t *src,
                                 double shape);
+
+#ifdef __cplusplus
+}
+#endif
