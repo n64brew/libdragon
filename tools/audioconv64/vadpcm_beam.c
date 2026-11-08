@@ -5,7 +5,7 @@
  * Implemented by BoxingBruin.
  */
 
-#include "beam.h"
+#include "vadpcm_beam.h"
 
 #include <stdint.h>
 #include <string.h>

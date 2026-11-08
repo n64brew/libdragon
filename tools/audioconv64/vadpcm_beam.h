@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vadpcm.h"
+#include "vadpcm/codec/vadpcm.h"
 
 // Refine an existing VADPCM stream in place using beam search. Reuses the
 // codebook and compares predictors, scales, and residual sequences for each
