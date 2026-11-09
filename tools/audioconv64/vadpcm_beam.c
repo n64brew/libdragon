@@ -122,43 +122,6 @@ static void vadpcm_beam_next_vector(struct vadpcm_beam_candidate *candidate,
     }
 }
 
-// Add one residual choice to a candidate, record its reconstructed sample, score it, and update later predictions.
-static void vadpcm_beam_extend(struct vadpcm_beam_candidate *candidate,
-                               const struct vadpcm_vector *predictor,
-                               const int16_t original[kVADPCMFrameSampleCount],
-                               int sample_index,
-                               int residual,
-                               int scale,
-                               double previous_frame_error,
-                               double shape) {
-
-    const int position = sample_index % kVADPCMVectorSampleCount;
-
-    // Penalize sudden changes in reconstruction error.
-    // Get the previous sample's error so we can compare it with this sample's.
-    const double previous_error = sample_index == 0
-                                  ? previous_frame_error
-                                  : (double)candidate->reconstructed[sample_index -1] -
-                                  original[sample_index -1];
-
-    const int16_t reconstructed = vadpcm_beam_reconstruct(candidate->accumulator[position],
-                                                          residual,
-                                                          scale);
-
-    // Store the residual and its reconstructed sample as part of this sequence.
-    candidate->residuals[sample_index] = residual;
-    candidate->reconstructed[sample_index] = reconstructed;
-
-    // Add this sample's error penalty to the sequence's total score.
-    candidate->cost += vadpcm_beam_sample_cost(reconstructed,
-                                        original[sample_index],
-                                               previous_error,
-                                               shape);
-
-    // Apply this correction to later predictions in the group using the predictor's weights.
-    vadpcm_beam_propogate(candidate, predictor, position, residual, scale);
-}
-
 // Compare two candidates by score.
 static int vadpcm_beam_worse(const struct vadpcm_beam_candidate *a,
                              const struct vadpcm_beam_candidate *b) {
@@ -280,17 +243,53 @@ static int vadpcm_beam_search(struct vadpcm_beam_candidate *best,
                 vadpcm_beam_next_vector(&base, predictor);
             }
 
-            // Try each possible residual.
+            // Get the previous sample's error so we can compare it with this sample's error.
+            const double previous_error = sample == 0
+                ? previous_frame_error
+                : (double)base.reconstructed[sample - 1] - original[sample - 1];
+
+            // Find this sample's position within the group of samples.
+            const int position = sample % kVADPCMVectorSampleCount;
+
+
             for (int residual = min_residual; residual <= max_residual; residual++) {
-                struct vadpcm_beam_candidate candidate = base;
-
                 // Default to earlier candidate when two candidates have equal cost.
-                candidate.order = parent * choices + residual - min_residual;
+                const int order = parent * choices + residual - min_residual;
 
-                vadpcm_beam_extend(&candidate, predictor, original, sample, residual,
-                                   scale, previous_frame_error, shape);
+                // Calculate the sample this residual would reconstruct.
+                const int16_t reconstructed = vadpcm_beam_reconstruct(base.accumulator[position],
+                                                                      residual,
+                                                                      scale);
 
-                // Keep this candidate if there is room, or if it beats the worst one kept.
+                // Add this sample's error penalty to the sequence's total score.
+                const double cost = base.cost + vadpcm_beam_sample_cost(reconstructed,
+                                                                 original[sample],
+                                                                 previous_error,
+                                                                 shape);
+
+                // If all candidate slots are full, compare against the worst one kept.
+                if (next_count == kVADPCMBeamWidth) {
+                    const struct vadpcm_beam_candidate *worst = &next[heap[0]];
+
+                    // Discard this candidate unless its score or tie-breaking order is better.
+                    if (cost > worst->cost || (cost == worst->cost && order >= worst->order)) {
+                        continue;
+                    }
+                }
+
+                // Copy the parent sequence only after deciding to keep this candidate.
+                struct vadpcm_beam_candidate candidate = base;
+                candidate.order = order;
+                candidate.cost = cost;
+
+                // Store the residual and its reconstructed sample as part of this sequence.
+                candidate.reconstructed[sample] = reconstructed;
+                candidate.residuals[sample] = residual;
+
+                // Apply this correction to later predictions in the group using the predictor's weights.
+                vadpcm_beam_propogate(&candidate, predictor, position, residual, scale);
+
+                // Keep this candidate if there is room, or replace the worst candidate.
                 vadpcm_beam_keep(next, heap, &next_count, &candidate);
             }
         }
