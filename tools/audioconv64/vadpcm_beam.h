@@ -13,7 +13,7 @@ enum {
 
 // Refine an existing VADPCM stream in place using beam search. Reuses the
 // codebook and compares predictors, scales, and residual sequences for each
-// frame. The predictor order is kVADPCMEncodeOrder (2).
+// frame. The predictor order is kVADPCMEncodeOrder.
 //
 // Call after successful vadpcm_encode(), using the same encoding parameters,
 // codebook, frame count, and original samples. Process a complete channel
