@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <time.h>
 #include <unordered_set>
+#include <exception>
+#include <thread>
 #include "../common/binout.h"
 #include "../common/polyfill.h"
 #include "audioconv64.h"
@@ -45,6 +47,7 @@ int flag_wav_looping_offset = 0;
 int flag_wav_compress = 1;
 int flag_wav_compress_vadpcm_huffman = -1;
 int flag_wav_compress_vadpcm_bits = 4;
+bool flag_wav_compress_vadpcm_beam = false;
 ulc_mode_t flag_wav_compress_ulc_mode = ULC_MODE_VBR;
 float flag_wav_compress_ulc_bitrate = 64.0f;
 float flag_wav_compress_ulc_quality = 50.0f;
@@ -438,17 +441,29 @@ bool wav64_write(const char *infn, const char *outfn, FILE *out, wav_data_t* wav
 				/ kVADPCMFrameSampleCount * kVADPCMFrameSampleCount;
 		}
 
-		int16_t *schan = (int16_t*)malloc(wav->cnt * sizeof(int16_t));
-		for (int i=0; i<wav->channels; i++) {
+		// Encode one channel and prepare its decoder states and packed frame positions.
+		auto convert_channel = [&](int i) -> bool {
+			int16_t *schan = (int16_t*)malloc(wav->cnt * sizeof(int16_t));
 			uint8_t *destchan = (uint8_t*)malloc(nframes * kVADPCMFrameByteSize);
+
 			for (int j=0; j<wav->cnt; j++)
 				schan[j] = wav->samples[i + j*wav->channels];
 			vadpcm_error err = vadpcm_encode(&parms, codebook + kPREDICTORS * kVADPCMEncodeOrder * i, nframes, destchan, schan, NULL);
 			if (err != kVADPCMErrNone) {
 				fprintf(stderr, "ERROR: %s: VADPCM encoding failed: %s\n", infn, vadpcm_error_name(err));
-				failed = true;
 				free(destchan);
-				break;
+				free(schan);
+				return false;
+			}
+			if (flag_wav_compress_vadpcm_beam) {
+				err = vadpcm_beam_refine(&parms, codebook + kPREDICTORS * kVADPCMEncodeOrder * i, nframes, destchan, schan, kVADPCMBeamDefaultShape);
+
+				if (err != kVADPCMErrNone) {
+					fprintf(stderr, "ERROR: %s: VADPCM beam refinement failed: %s\n", infn, vadpcm_error_name(err));
+					free(destchan);
+					free(schan);
+					return false;
+				}
 			}
 			if (!skip_points.empty()) {
 				// Compute decoder states at all skip points in a single forward pass.
@@ -503,9 +518,41 @@ bool wav64_write(const char *infn, const char *outfn, FILE *out, wav_data_t* wav
 				}
 				memcpy(dest + dstj * kVADPCMFrameByteSize, destchan + j * kVADPCMFrameByteSize, kVADPCMFrameByteSize);
 			}
+			// Release this channel's buffers after copying its encoded frames.
 			free(destchan);
+			free(schan);
+			return true;
+		};
+		bool right_ok = false;
+		std::thread right_worker;
+
+		// Try processing the right channel separately when refining stereo audio.
+		if (flag_wav_compress_vadpcm_beam && wav->channels == 2) {
+			try {
+				right_worker = std::thread([&] {
+					right_ok = convert_channel(1);
+				});
+			} catch (const std::exception&) {
+				// Leave the worker empty so both channels are processed below.
+			}
 		}
-		free(schan);
+
+		if (right_worker.joinable()) {
+			// Process the left channel while the worker processes the right channel.
+			const bool left_ok = convert_channel(0);
+
+			// Wait for the right channel before checking results or packing the output.
+			right_worker.join();
+			failed = failed || !left_ok || !right_ok;
+		} else {
+			// Process channels one at a time when no worker was started.
+			for (int i = 0; i < wav->channels; i++) {
+				if (!convert_channel(i)) {
+					failed = true;
+					break;
+				}
+			}
+		}
 		if (failed) {
 			free(dest);
 			break;
